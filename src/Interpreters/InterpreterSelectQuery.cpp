@@ -566,7 +566,7 @@ InterpreterSelectQuery::InterpreterSelectQuery(
             settings.additional_table_filters, joined_tables.tablesWithColumns().front().table, *context);
 
     ASTPtr parallel_replicas_custom_filter_ast = nullptr;
-    if (storage && context->getParallelReplicasMode() == Context::ParallelReplicasMode::CUSTOM_KEY && !joined_tables.tablesWithColumns().empty())
+    if (storage && context->getParallelReplicasMode() == ParallelReplicasMode::CUSTOM_KEY_SAMPLING && !joined_tables.tablesWithColumns().empty())
     {
         if (settings.parallel_replicas_count > 1)
         {
@@ -578,7 +578,7 @@ InterpreterSelectQuery::InterpreterSelectQuery(
                     settings.parallel_replicas_count,
                     settings.parallel_replica_offset,
                     std::move(custom_key_ast),
-                    {settings.parallel_replicas_custom_key_filter_type,
+                    {settings.parallel_replicas_mode,
                      settings.parallel_replicas_custom_key_range_lower,
                      settings.parallel_replicas_custom_key_range_upper},
                     storage->getInMemoryMetadataPtr()->columns,

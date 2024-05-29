@@ -168,10 +168,16 @@ IMPLEMENT_SETTING_ENUM(Dialect, ErrorCodes::BAD_ARGUMENTS,
      {"kusto", Dialect::kusto},
      {"prql", Dialect::prql}})
 
-
 IMPLEMENT_SETTING_ENUM(ParallelReplicasCustomKeyFilterType, ErrorCodes::BAD_ARGUMENTS,
     {{"default", ParallelReplicasCustomKeyFilterType::DEFAULT},
      {"range", ParallelReplicasCustomKeyFilterType::RANGE}})
+
+IMPLEMENT_SETTING_ENUM(ParallelReplicasMode, ErrorCodes::BAD_ARGUMENTS,
+    {{"default", ParallelReplicasMode::AUTO},
+     {"range", ParallelReplicasMode::READ_TASKS},
+     {"range", ParallelReplicasMode::CUSTOM_KEY_SAMPLING},
+     {"range", ParallelReplicasMode::CUSTOM_KEY_RANGE},
+     {"range", ParallelReplicasMode::SAMPLING_KEY}})
 
 IMPLEMENT_SETTING_AUTO_ENUM(LocalFSReadMethod, ErrorCodes::BAD_ARGUMENTS)
 

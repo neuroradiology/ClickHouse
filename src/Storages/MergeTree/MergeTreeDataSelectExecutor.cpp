@@ -271,7 +271,7 @@ MergeTreeDataSelectSamplingData MergeTreeDataSelectExecutor::getSampling(
     auto parallel_replicas_mode = context->getParallelReplicasMode();
     /// Parallel replicas has been requested but there is no way to sample data.
     /// Select all data from first replica and no data from other replicas.
-    if (settings.parallel_replicas_count > 1 && parallel_replicas_mode == Context::ParallelReplicasMode::SAMPLE_KEY
+    if (settings.parallel_replicas_count > 1 && parallel_replicas_mode == ParallelReplicasMode::SAMPLING_KEY
         && !data.supportsSampling() && settings.parallel_replica_offset > 0)
     {
         LOG_DEBUG(
@@ -283,7 +283,7 @@ MergeTreeDataSelectSamplingData MergeTreeDataSelectExecutor::getSampling(
     }
 
     sampling.use_sampling = relative_sample_size > 0
-        || (settings.parallel_replicas_count > 1 && parallel_replicas_mode == Context::ParallelReplicasMode::SAMPLE_KEY
+        || (settings.parallel_replicas_count > 1 && parallel_replicas_mode == ParallelReplicasMode::SAMPLING_KEY
             && data.supportsSampling());
     bool no_data = false; /// There is nothing left after sampling.
 

@@ -56,7 +56,7 @@ function run_query_with_custom_key_parallel_replicas () {
         --query "$2" \
         --query_id "${1}_custom_key" \
         --max_parallel_replicas 3 \
-        --parallel_replicas_custom_key_filter_type 'default' \
+        --parallel_replicas_mode 'key_hash' \
         --parallel_replicas_custom_key "$2" \
         --allow_experimental_analyzer 0
 
@@ -64,7 +64,7 @@ function run_query_with_custom_key_parallel_replicas () {
         --query "$2" \
         --query_id "${1}_custom_key_analyzer" \
         --max_parallel_replicas 3 \
-        --parallel_replicas_custom_key_filter_type 'default' \
+        --parallel_replicas_mode 'key_hash' \
         --parallel_replicas_custom_key "$2" \
         --allow_experimental_analyzer 1
 }
