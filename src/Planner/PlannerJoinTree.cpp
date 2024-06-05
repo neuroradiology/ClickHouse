@@ -290,14 +290,13 @@ bool applyTrivialCountIfPossible(
     if (!num_rows)
         return false;
 
-    if (settings.max_parallel_replicas > 1)
+    if (settings.use_parallel_replicas > 0 && settings.max_parallel_replicas > 1)
     {
         if (!settings.parallel_replicas_custom_key.value.empty() || settings.use_parallel_replicas == 0)
             return false;
 
         /// The query could use trivial count if it didn't use parallel replicas, so let's disable it
         query_context->setSetting("use_parallel_replicas", Field(0));
-        query_context->setSetting("max_parallel_replicas", UInt64{1});
         LOG_TRACE(getLogger("Planner"), "Disabling parallel replicas to be able to use a trivial count optimization");
 
     }
@@ -487,7 +486,12 @@ FilterDAGInfo buildCustomKeyFilterIfNeeded(const StoragePtr & storage,
     const auto & query_context = planner_context->getQueryContext();
     const auto & settings = query_context->getSettingsRef();
 
-    if (settings.parallel_replicas_count <= 1 || settings.parallel_replicas_custom_key.value.empty())
+    const bool is_parallel_replicas_with_custom_key = 
+        settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_RANGE || 
+        settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_SAMPLING;
+    const bool can_use_custom_key_parallel_replicas = settings.use_parallel_replicas > 0 && is_parallel_replicas_with_custom_key;
+
+    if (!can_use_custom_key_parallel_replicas || settings.parallel_replicas_count <= 1 || settings.parallel_replicas_custom_key.value.empty())
         return {};
 
     auto custom_key_ast = parseCustomKeyForTable(settings.parallel_replicas_custom_key, *query_context);

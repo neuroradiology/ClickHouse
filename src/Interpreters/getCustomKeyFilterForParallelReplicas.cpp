@@ -29,6 +29,7 @@ ASTPtr getCustomKeyFilterForParallelReplica(
     const ContextPtr & context)
 {
     chassert(replicas_count > 1);
+    chassert(filter.filter_type == ParallelReplicasMode::CUSTOM_KEY_SAMPLING || filter.filter_type == ParallelReplicasMode::CUSTOM_KEY_RANGE);
     if (filter.filter_type == ParallelReplicasMode::CUSTOM_KEY_SAMPLING)
     {
         // first we do modulo with replica count
@@ -40,7 +41,7 @@ ASTPtr getCustomKeyFilterForParallelReplica(
         return equals_function;
     }
 
-    chassert(filter.filter_type == ParallelReplicasMode::CUSTOM_KEY_SAMPLING);
+    chassert(filter.filter_type == ParallelReplicasMode::CUSTOM_KEY_RANGE);
 
     KeyDescription custom_key_description
         = KeyDescription::getKeyFromAST(custom_key_ast, columns, context);

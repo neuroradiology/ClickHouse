@@ -173,11 +173,11 @@ IMPLEMENT_SETTING_ENUM(ParallelReplicasCustomKeyFilterType, ErrorCodes::BAD_ARGU
      {"range", ParallelReplicasCustomKeyFilterType::RANGE}})
 
 IMPLEMENT_SETTING_ENUM(ParallelReplicasMode, ErrorCodes::BAD_ARGUMENTS,
-    {{"default", ParallelReplicasMode::AUTO},
-     {"range", ParallelReplicasMode::READ_TASKS},
-     {"range", ParallelReplicasMode::CUSTOM_KEY_SAMPLING},
-     {"range", ParallelReplicasMode::CUSTOM_KEY_RANGE},
-     {"range", ParallelReplicasMode::SAMPLING_KEY}})
+    {{"auto", ParallelReplicasMode::AUTO},
+     {"read_tasks", ParallelReplicasMode::READ_TASKS},
+     {"custom_key_sampling", ParallelReplicasMode::CUSTOM_KEY_SAMPLING},
+     {"custom_key_range", ParallelReplicasMode::CUSTOM_KEY_RANGE},
+     {"sampling_key", ParallelReplicasMode::SAMPLING_KEY}})
 
 IMPLEMENT_SETTING_AUTO_ENUM(LocalFSReadMethod, ErrorCodes::BAD_ARGUMENTS)
 

@@ -566,7 +566,7 @@ InterpreterSelectQuery::InterpreterSelectQuery(
             settings.additional_table_filters, joined_tables.tablesWithColumns().front().table, *context);
 
     ASTPtr parallel_replicas_custom_filter_ast = nullptr;
-    if (storage && context->getParallelReplicasMode() == ParallelReplicasMode::CUSTOM_KEY_SAMPLING && !joined_tables.tablesWithColumns().empty())
+    if (storage && settings.use_parallel_replicas > 0 && context->getParallelReplicasMode() == ParallelReplicasMode::CUSTOM_KEY_SAMPLING && !joined_tables.tablesWithColumns().empty())
     {
         if (settings.parallel_replicas_count > 1)
         {
@@ -801,7 +801,6 @@ InterpreterSelectQuery::InterpreterSelectQuery(
             != parallel_replicas_before_analysis)
         {
             context->setSetting("use_parallel_replicas", Field(0));
-            context->setSetting("max_parallel_replicas", UInt64{1});
             need_analyze_again = true;
         }
 
@@ -893,7 +892,6 @@ bool InterpreterSelectQuery::adjustParallelReplicasAfterAnalysis()
     {
         /// The query could use trivial count if it didn't use parallel replicas, so let's disable it and reanalyze
         context->setSetting("use_parallel_replicas", Field(0));
-        context->setSetting("max_parallel_replicas", UInt64{1});
         LOG_DEBUG(log, "Disabling parallel replicas to be able to use a trivial count optimization");
         return true;
     }
@@ -948,7 +946,6 @@ bool InterpreterSelectQuery::adjustParallelReplicasAfterAnalysis()
     if (number_of_replicas_to_use <= 1)
     {
         context->setSetting("use_parallel_replicas", Field(0));
-        context->setSetting("max_parallel_replicas", UInt64{1});
         LOG_DEBUG(log, "Disabling parallel replicas because there aren't enough rows to read");
         return true;
     }
@@ -2292,12 +2289,12 @@ void InterpreterSelectQuery::addPrewhereAliasActions()
 }
 
 /// Based on the query analysis, check if using a trivial count (storage or partition metadata) is possible
-std::optional<UInt64> InterpreterSelectQuery::getTrivialCount(UInt64 max_parallel_replicas)
+std::optional<UInt64> InterpreterSelectQuery::getTrivialCount(UInt64 use_parallel_replicas)
 {
     const Settings & settings = context->getSettingsRef();
     bool optimize_trivial_count =
         syntax_analyzer_result->optimize_trivial_count
-        && (max_parallel_replicas <= 1)
+        && (use_parallel_replicas == 0)
         && !settings.allow_experimental_query_deduplication
         && !settings.empty_result_for_aggregation_by_empty_set
         && storage
@@ -2424,7 +2421,7 @@ void InterpreterSelectQuery::executeFetchColumns(QueryProcessingStage::Enum proc
     std::optional<UInt64> num_rows;
 
     /// Optimization for trivial query like SELECT count() FROM table.
-    if (processing_stage == QueryProcessingStage::FetchColumns && (num_rows = getTrivialCount(settings.max_parallel_replicas)))
+    if (processing_stage == QueryProcessingStage::FetchColumns && (num_rows = getTrivialCount(settings.use_parallel_replicas)))
     {
         const auto & desc = query_analyzer->aggregates()[0];
         const auto & func = desc.function;

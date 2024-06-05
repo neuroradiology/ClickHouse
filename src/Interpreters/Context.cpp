@@ -5373,7 +5373,9 @@ ParallelReplicasMode Context::getParallelReplicasMode() const
 bool Context::canUseTaskBasedParallelReplicas() const
 {
     const auto & settings_ref = getSettingsRef();
-    return getParallelReplicasMode() == ParallelReplicasMode::READ_TASKS && settings_ref.max_parallel_replicas > 1;
+    return settings_ref.use_parallel_replicas > 0 
+        && settings_ref.parallel_replicas_mode == ParallelReplicasMode::READ_TASKS 
+        && settings_ref.max_parallel_replicas > 1;
 }
 
 bool Context::canUseParallelReplicasOnInitiator() const
@@ -5388,12 +5390,14 @@ bool Context::canUseParallelReplicasOnFollower() const
 
 bool Context::canUseParallelReplicasCustomKey(const Cluster & cluster) const
 {
-    const bool has_enough_servers = settings.max_parallel_replicas > 1 && cluster.getShardCount() == 1 && cluster.getShardsInfo()[0].getAllNodeCount() > 1;
+    const auto & settings_ref = getSettingsRef();
+    const bool has_enough_servers = settings_ref.max_parallel_replicas > 1 && cluster.getShardCount() == 1 && cluster.getShardsInfo()[0].getAllNodeCount() > 1;
+    const bool parallel_replicas_enabled = settings_ref.use_parallel_replicas > 0;
     const bool is_parallel_replicas_with_custom_key =
-        getParallelReplicasMode() == ParallelReplicasMode::CUSTOM_KEY_SAMPLING ||
-        getParallelReplicasMode() == ParallelReplicasMode::CUSTOM_KEY_RANGE;
+        settings_ref.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_SAMPLING ||
+        settings_ref.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_RANGE;
 
-    return has_enough_servers && is_parallel_replicas_with_custom_key;
+    return has_enough_servers && parallel_replicas_enabled && is_parallel_replicas_with_custom_key;
 }
 
 void Context::setPreparedSetsCache(const PreparedSetsCachePtr & cache)
