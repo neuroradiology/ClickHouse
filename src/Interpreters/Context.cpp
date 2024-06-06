@@ -5373,8 +5373,8 @@ ParallelReplicasMode Context::getParallelReplicasMode() const
 bool Context::canUseTaskBasedParallelReplicas() const
 {
     const auto & settings_ref = getSettingsRef();
-    return settings_ref.use_parallel_replicas > 0 
-        && settings_ref.parallel_replicas_mode == ParallelReplicasMode::READ_TASKS 
+    return settings_ref.use_parallel_replicas > 0
+        && settings_ref.parallel_replicas_mode == ParallelReplicasMode::READ_TASKS
         && settings_ref.max_parallel_replicas > 1;
 }
 

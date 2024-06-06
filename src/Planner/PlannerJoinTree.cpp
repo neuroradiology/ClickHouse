@@ -486,8 +486,8 @@ FilterDAGInfo buildCustomKeyFilterIfNeeded(const StoragePtr & storage,
     const auto & query_context = planner_context->getQueryContext();
     const auto & settings = query_context->getSettingsRef();
 
-    const bool is_parallel_replicas_with_custom_key = 
-        settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_RANGE || 
+    const bool is_parallel_replicas_with_custom_key =
+        settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_RANGE ||
         settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_SAMPLING;
     const bool can_use_custom_key_parallel_replicas = settings.use_parallel_replicas > 0 && is_parallel_replicas_with_custom_key;
 

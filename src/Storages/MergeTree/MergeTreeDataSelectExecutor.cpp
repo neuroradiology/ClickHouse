@@ -268,7 +268,7 @@ MergeTreeDataSelectSamplingData MergeTreeDataSelectExecutor::getSampling(
         * It is also important that the entire universe can be covered using SAMPLE 0.1 OFFSET 0, ... OFFSET 0.9 and similar decimals.
         */
 
-    const bool can_use_sampling_key_parallel_replicas = 
+    const bool can_use_sampling_key_parallel_replicas =
         settings.use_parallel_replicas > 0
         && settings.max_parallel_replicas > 1
         && settings.parallel_replicas_mode == ParallelReplicasMode::SAMPLING_KEY;
