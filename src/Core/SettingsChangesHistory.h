@@ -103,7 +103,7 @@ static const std::map<ClickHouseVersion, SettingsChangesHistory::SettingsChanges
               {"allow_experimental_statistic", false, false, "Old setting which popped up here being renamed."},
               {"allow_statistics_optimize", false, false, "The setting was renamed. The previous name is `allow_statistic_optimize`."},
               {"allow_experimental_statistics", false, false, "The setting was renamed. The previous name is `allow_experimental_statistic`."},
-              {"parallel_replicas_mode", "", "read_tasks", "This setting was introduced as a part of making parallel replicas feature Beta"},
+              {"parallel_replicas_mode", "read_tasks", "read_tasks", "This setting was introduced as a part of making parallel replicas feature Beta"},
               {"parallel_replicas_custom_key_range_lower", 0, 0, "Add settings to control the range filter when using parallel replicas with dynamic shards"},
               {"parallel_replicas_custom_key_range_upper", 0, 0, "Add settings to control the range filter when using parallel replicas with dynamic shards. A value of 0 disables the upper limit"},
               }},

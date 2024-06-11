@@ -292,7 +292,15 @@ bool applyTrivialCountIfPossible(
 
     if (settings.use_parallel_replicas > 0 && settings.max_parallel_replicas > 1)
     {
-        if (!settings.parallel_replicas_custom_key.value.empty() || settings.use_parallel_replicas == 0)
+        /// Imagine the situation when we have a query with parallel replicas and
+        /// this code executed on the remote server.
+        /// If we will apply trivial count optimization, then each remote server will do the same
+        /// and we will have N times more rows as the result on the initiator.
+        /// TODO: This condition seems unneded when we will make the parallel replicas with custom key
+        /// to work on top of MergeTree instead of Distributed.
+        if (settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_RANGE ||
+            settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_SAMPLING ||
+            settings.parallel_replicas_mode == ParallelReplicasMode::SAMPLING_KEY)
             return false;
 
         /// The query could use trivial count if it didn't use parallel replicas, so let's disable it
