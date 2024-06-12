@@ -296,7 +296,7 @@ bool applyTrivialCountIfPossible(
         /// this code executed on the remote server.
         /// If we will apply trivial count optimization, then each remote server will do the same
         /// and we will have N times more rows as the result on the initiator.
-        /// TODO: This condition seems unneded when we will make the parallel replicas with custom key
+        /// TODO: This condition seems unneeded when we will make the parallel replicas with custom key
         /// to work on top of MergeTree instead of Distributed.
         if (settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_RANGE ||
             settings.parallel_replicas_mode == ParallelReplicasMode::CUSTOM_KEY_SAMPLING ||
