@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tags: no-fasttest, no-parallel, no-replicated-database
+# Tags: no-fasttest, no-replicated-database
 
 CURDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=../shell_config.sh
@@ -11,7 +11,7 @@ touch $CAPN_PROTO_FILE
 
 SCHEMADIR=$($CLICKHOUSE_CLIENT_BINARY --query "select * from file('data.capnp', 'CapnProto', 'val1 char') settings format_schema='nonexist:Message'" 2>&1 | grep Exception | grep -oP "file \K.*(?=/nonexist.capnp)")
 CLIENT_SCHEMADIR=$CURDIR/format_schemas
-SERVER_SCHEMADIR=test_02030
+SERVER_SCHEMADIR=${CLICKHOUSE_DATABASE}
 mkdir -p $SCHEMADIR/$SERVER_SCHEMADIR
 cp -r $CLIENT_SCHEMADIR/02030_* $SCHEMADIR/$SERVER_SCHEMADIR/
 

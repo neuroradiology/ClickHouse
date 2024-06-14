@@ -1,29 +1,27 @@
--- Tags: no-parallel
+DROP DATABASE IF EXISTS db_01113;
 
-DROP DATABASE IF EXISTS database_for_dict;
+CREATE DATABASE db_01113;
 
-CREATE DATABASE database_for_dict;
-
-CREATE TABLE database_for_dict.table_for_dict (
+CREATE TABLE db_01113.table_for_dict (
   CompanyID String,
   OSType Enum('UNKNOWN' = 0, 'WINDOWS' = 1, 'LINUX' = 2, 'ANDROID' = 3, 'MAC' = 4),
   SomeID Int32
 )
 ENGINE = Memory();
 
-INSERT INTO database_for_dict.table_for_dict VALUES ('First', 'WINDOWS', 1), ('Second', 'LINUX', 2);
+INSERT INTO db_01113.table_for_dict VALUES ('First', 'WINDOWS', 1), ('Second', 'LINUX', 2);
 
-CREATE DICTIONARY database_for_dict.dict_with_conversion
+CREATE DICTIONARY db_01113.dict_with_conversion
 (
   CompanyID String DEFAULT '',
   OSType String DEFAULT '',
   SomeID Int32 DEFAULT 0
 )
 PRIMARY KEY CompanyID
-SOURCE(CLICKHOUSE(HOST 'localhost' PORT tcpPort() USER 'default' TABLE 'table_for_dict' DB 'database_for_dict'))
+SOURCE(CLICKHOUSE(HOST 'localhost' PORT tcpPort() USER 'default' TABLE 'table_for_dict' DB 'db_01113'))
 LIFETIME(MIN 1 MAX 20)
 LAYOUT(COMPLEX_KEY_HASHED());
 
-SELECT * FROM database_for_dict.dict_with_conversion ORDER BY CompanyID;
+SELECT * FROM db_01113.dict_with_conversion ORDER BY CompanyID;
 
-DROP DATABASE IF EXISTS database_for_dict;
+DROP DATABASE IF EXISTS db_01113;
