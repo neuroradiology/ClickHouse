@@ -105,6 +105,7 @@ def get_run_command(
     return (
         f"docker run --volume={builds_path}:/package_folder "
         f"{ci_logs_args}"
+        "--ulimit nofile=1048576:1048576 "
         f"--volume={repo_path}/tests:/usr/share/clickhouse-test "
         f"{volume_with_broken_test}"
         f"--volume={result_path}:/test_output "
