@@ -1462,8 +1462,7 @@ class TestCase:
         description_full = messages[result.status]
         description_full += self.print_test_time(result.total_time)
         if result.reason is not None:
-            description_full += " - "
-            description_full += result.reason.value
+            description_full += f"\nReason: {result.reason.value} "
 
         description_full += result.description
 
@@ -2118,7 +2117,7 @@ def run_tests_array(all_tests_with_params: Tuple[List[str], int, TestSuite]):
     if num_tests > 0:
         about = "about " if is_concurrent else ""
         proc_name = multiprocessing.current_process().name
-        print(f"\nRunning {about}{num_tests} {test_suite.suite} tests ({proc_name}).\n")
+        print(f"Running {about}{num_tests} {test_suite.suite} tests ({proc_name}).")
 
     while True:
         if is_concurrent:
@@ -2443,6 +2442,7 @@ def do_run_tests(jobs, test_suite: TestSuite, parallel):
 
         pool.join()
 
+        print("Run sequential tests")
         run_tests_array(
             (test_suite.sequential_tests, len(test_suite.sequential_tests), test_suite)
         )
