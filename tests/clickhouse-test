@@ -2066,8 +2066,13 @@ multiprocessing_manager = None
 restarted_tests = None
 
 
-def run_tests_array(all_tests_with_params: Tuple[List[str], int, TestSuite]):
-    all_tests, num_tests, test_suite = all_tests_with_params
+def run_tests_array(all_tests_with_params: Tuple[List[str], int, TestSuite, bool]):
+    (
+        all_tests,
+        num_tests,
+        test_suite,
+        is_concurrent,
+    ) = all_tests_with_params
     global stop_time
     global exit_code
     global server_died
@@ -2109,8 +2114,6 @@ def run_tests_array(all_tests_with_params: Tuple[List[str], int, TestSuite]):
     failures_total = 0
     failures_chain = 0
     start_time = datetime.now()
-
-    is_concurrent = multiprocessing.current_process().name != "MainProcess"
 
     client_options = get_additional_client_options(args)
 
@@ -2388,7 +2391,7 @@ def extract_key(key: str) -> str:
     )[1]
 
 
-def do_run_tests(jobs, test_suite: TestSuite, parallel):
+def do_run_tests(jobs, test_suite: TestSuite):
     if jobs > 1 and len(test_suite.parallel_tests) > 0:
         print(
             "Found",
@@ -2397,19 +2400,12 @@ def do_run_tests(jobs, test_suite: TestSuite, parallel):
             len(test_suite.sequential_tests),
             "sequential tests",
         )
-        run_n, run_total = parallel.split("/")
-        run_n = float(run_n)
-        run_total = float(run_total)
         tests_n = len(test_suite.parallel_tests)
-        run_total = min(run_total, tests_n)
-
         jobs = min(jobs, tests_n)
-        run_total = max(jobs, run_total)
-
         batch_size = max(1, len(test_suite.parallel_tests) // jobs)
         parallel_tests_array = []
         for _ in range(jobs):
-            parallel_tests_array.append((None, batch_size, test_suite))
+            parallel_tests_array.append((None, batch_size, test_suite, True))
 
         # If we don't do random shuffling then there will be always
         # nearly the same groups of test suites running concurrently.
@@ -2432,24 +2428,79 @@ def do_run_tests(jobs, test_suite: TestSuite, parallel):
                 for _ in range(jobs):
                     queue.put(None, timeout=args.timeout * 1.1)
 
-                queue.close()
         except Full:
             print(
                 "Couldn't put test to the queue within timeout. Server probably hung."
             )
             print_stacktraces()
-            queue.close()
 
-        pool.join()
+        if args.run_sequential_tests_in_parallel:
+            # Run parallel tests and sequential tests at the same time
+            # Sequential tests will use different ClickHouse instance
 
-        print("Run sequential tests")
-        run_tests_array(
-            (test_suite.sequential_tests, len(test_suite.sequential_tests), test_suite)
-        )
+            # Create a new process to run these tests
+            # In this process we can safely override values in `args` and `os.environ`
+
+            def override_envs(*args_, **kwargs):
+                global args
+                args.client += " --port 39000"
+                args.http_port = 38123
+                args.https_port = 38443
+
+                os.environ["CLICKHOUSE_CONFIG"] = "/etc/clickhouse-server3/config.xml"
+                os.environ["CLICKHOUSE_PORT_TCP"] = "39000"
+                os.environ["CLICKHOUSE_PORT_TCP_SECURE"] = "39440"
+                os.environ["CLICKHOUSE_PORT_TCP_WITH_PROXY"] = "39010"
+                os.environ["CLICKHOUSE_PORT_HTTP"] = "38123"
+                os.environ["CLICKHOUSE_PORT_HTTPS"] = "38443"
+                os.environ["CLICKHOUSE_PORT_INTERSERVER"] = "39009"
+                os.environ["CLICKHOUSE_PORT_KEEPER"] = "39181"
+                os.environ["CLICKHOUSE_PORT_PROMTHEUS_PORT"] = "39988"
+                os.environ["CLICKHOUSE_PORT_MYSQL"] = "39004"
+                os.environ["CLICKHOUSE_PORT_POSTGRESQL"] = "39005"
+
+                run_tests_array(*args_, **kwargs)
+
+            process = multiprocessing.Process(
+                target=override_envs,
+                args=(
+                    (
+                        test_suite.sequential_tests,
+                        len(test_suite.sequential_tests),
+                        test_suite,
+                        False,
+                    ),
+                ),
+            )
+            print("Run sequential tests")
+            process.start()
+            process.join()
+            print("Sequential tests done")
+
+            pool.join()
+
+        if not args.run_sequential_tests_in_parallel:
+            pool.join()
+            run_tests_array(
+                (
+                    test_suite.sequential_tests,
+                    len(test_suite.sequential_tests),
+                    test_suite,
+                    False,
+                )
+            )
+
         return len(test_suite.sequential_tests) + len(test_suite.parallel_tests)
     else:
         num_tests = len(test_suite.all_tests)
-        run_tests_array((test_suite.all_tests, num_tests, test_suite))
+        run_tests_array(
+            (
+                test_suite.all_tests,
+                num_tests,
+                test_suite,
+                False,
+            )
+        )
         return num_tests
 
 
@@ -2807,7 +2858,7 @@ def main(args):
 
         test_suite.cloud_skip_list = cloud_skip_list
         test_suite.private_skip_list = private_skip_list
-        total_tests_run += do_run_tests(args.jobs, test_suite, args.parallel)
+        total_tests_run += do_run_tests(args.jobs, test_suite)
 
     if server_died.is_set():
         exit_code.value = 1
@@ -3259,6 +3310,15 @@ def parse_args():
         action="store_true",
         default=False,
         help="Replace ordinary MergeTree engine with SharedMergeTree",
+    )
+
+    parser.add_argument(
+        "--run-sequential-tests-in-parallel",
+        action="store_true",
+        default=False,
+        help="If `true`, tests with the tag `no-parallel` will run on a "
+        "separate ClickHouse instance in parallel with other tests. "
+        "This is used in CI to make test jobs run faster.",
     )
 
     return parser.parse_args()
