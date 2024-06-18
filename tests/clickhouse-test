@@ -2400,6 +2400,52 @@ def do_run_tests(jobs, test_suite: TestSuite):
             len(test_suite.sequential_tests),
             "sequential tests",
         )
+
+        if args.run_sequential_tests_in_parallel:
+            # Run parallel tests and sequential tests at the same time
+            # Sequential tests will use different ClickHouse instance
+
+            # Create a new process to run these tests
+            # In this process we can safely override values in `args` and `os.environ`
+
+            def override_envs(*args_, **kwargs):
+                global args
+                args.client += " --port 39000"
+                args.http_port = 38123
+                args.https_port = 38443
+
+                os.environ["CLICKHOUSE_CONFIG"] = "/etc/clickhouse-server3/config.xml"
+                os.environ["CLICKHOUSE_CONFIG_DIR"] = "/etc/clickhouse-server3"
+                os.environ[
+                    "CLICKHOUSE_CONFIG_GREP"
+                ] = "/etc/clickhouse-server3/preprocessed/config.xml"
+                os.environ["CLICKHOUSE_PORT_TCP"] = "39000"
+                os.environ["CLICKHOUSE_PORT_TCP_SECURE"] = "39440"
+                os.environ["CLICKHOUSE_PORT_TCP_WITH_PROXY"] = "39010"
+                os.environ["CLICKHOUSE_PORT_HTTP"] = "38123"
+                os.environ["CLICKHOUSE_PORT_HTTPS"] = "38443"
+                os.environ["CLICKHOUSE_PORT_INTERSERVER"] = "39009"
+                os.environ["CLICKHOUSE_PORT_KEEPER"] = "39181"
+                os.environ["CLICKHOUSE_PORT_PROMTHEUS_PORT"] = "39988"
+                os.environ["CLICKHOUSE_PORT_MYSQL"] = "39004"
+                os.environ["CLICKHOUSE_PORT_POSTGRESQL"] = "39005"
+
+                run_tests_array(*args_, **kwargs)
+
+            print("Run sequential tests")
+            process = multiprocessing.Process(
+                target=override_envs,
+                args=(
+                    (
+                        test_suite.sequential_tests,
+                        len(test_suite.sequential_tests),
+                        test_suite,
+                        False,
+                    ),
+                ),
+            )
+            process.start()
+
         tests_n = len(test_suite.parallel_tests)
         jobs = min(jobs, tests_n)
         batch_size = max(1, len(test_suite.parallel_tests) // jobs)
@@ -2435,52 +2481,12 @@ def do_run_tests(jobs, test_suite: TestSuite):
             print_stacktraces()
 
         if args.run_sequential_tests_in_parallel:
-            # Run parallel tests and sequential tests at the same time
-            # Sequential tests will use different ClickHouse instance
-
-            # Create a new process to run these tests
-            # In this process we can safely override values in `args` and `os.environ`
-
-            def override_envs(*args_, **kwargs):
-                global args
-                args.client += " --port 39000"
-                args.http_port = 38123
-                args.https_port = 38443
-
-                os.environ["CLICKHOUSE_CONFIG"] = "/etc/clickhouse-server3/config.xml"
-                os.environ["CLICKHOUSE_PORT_TCP"] = "39000"
-                os.environ["CLICKHOUSE_PORT_TCP_SECURE"] = "39440"
-                os.environ["CLICKHOUSE_PORT_TCP_WITH_PROXY"] = "39010"
-                os.environ["CLICKHOUSE_PORT_HTTP"] = "38123"
-                os.environ["CLICKHOUSE_PORT_HTTPS"] = "38443"
-                os.environ["CLICKHOUSE_PORT_INTERSERVER"] = "39009"
-                os.environ["CLICKHOUSE_PORT_KEEPER"] = "39181"
-                os.environ["CLICKHOUSE_PORT_PROMTHEUS_PORT"] = "39988"
-                os.environ["CLICKHOUSE_PORT_MYSQL"] = "39004"
-                os.environ["CLICKHOUSE_PORT_POSTGRESQL"] = "39005"
-
-                run_tests_array(*args_, **kwargs)
-
-            process = multiprocessing.Process(
-                target=override_envs,
-                args=(
-                    (
-                        test_suite.sequential_tests,
-                        len(test_suite.sequential_tests),
-                        test_suite,
-                        False,
-                    ),
-                ),
-            )
-            print("Run sequential tests")
-            process.start()
             process.join()
             print("Sequential tests done")
 
-            pool.join()
+        pool.join()
 
         if not args.run_sequential_tests_in_parallel:
-            pool.join()
             run_tests_array(
                 (
                     test_suite.sequential_tests,

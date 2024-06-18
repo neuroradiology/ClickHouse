@@ -101,13 +101,26 @@ if [[ -z "$USE_DATABASE_REPLICATED" ]] || [[ "$USE_DATABASE_REPLICATED" -ne 1 ]]
   sudo chown clickhouse:clickhouse /var/run/clickhouse-server3 /var/lib/clickhouse3 /etc/clickhouse-server3/
   sudo chown -R clickhouse:clickhouse /etc/clickhouse-server3/*
 
-  sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i "s|<port>9000</port>|<port>39000</port>|g" {} \;
-  sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i "s|<port>9440</port>|<port>39440</port>|g" {} \;
-  sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i "s|<port>9988</port>|<port>39988</port>|g" {} \;
-  sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i "s|<port>9234</port>|<port>39234</port>|g" {} \;
-  sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i "s|<port>9181</port>|<port>39181</port>|g" {} \;
-  sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i "s|<tcp_port>9181</tcp_port>|<tcp_port>39181</tcp_port>|g" {} \;
-  sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i "s|/var/lib/clickhouse/|/var/lib/clickhouse3/|g" {} \;
+  function replace(){
+      sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i $1 {} \;
+  }
+
+  replace "s|<port>9000</port>|<port>39000</port>|g"
+  replace "s|<port>9440</port>|<port>39440</port>|g"
+  replace "s|<port>9988</port>|<port>39988</port>|g"
+  replace "s|<port>9234</port>|<port>39234</port>|g"
+  replace "s|<port>9181</port>|<port>39181</port>|g"
+  replace "s|<https_port>8443</https_port>|<https_port>38443</https_port>|g"
+  replace "s|<tcp_port>9000</tcp_port>|<tcp_port>39000</tcp_port>|g"
+  replace "s|<tcp_port>9181</tcp_port>|<tcp_port>39181</tcp_port>|g"
+  replace "s|<tcp_port_secure>9440</tcp_port_secure>|<tcp_port_secure>39440</tcp_port_secure>|g"
+  replace "s|<tcp_with_proxy_port>9010</tcp_with_proxy_port>|<tcp_with_proxy_port>39010</tcp_with_proxy_port>|g"
+  replace "s|<mysql_port>9004</mysql_port>|<mysql_port>39004</mysql_port>|g"
+  replace "s|<postgresql_port>9005</postgresql_port>|<postgresql_port>39005</postgresql_port>|g"
+  replace "s|<interserver_http_port>9009</interserver_http_port>|<interserver_http_port>39009</interserver_http_port>|g"
+  replace "s|8123|38123|g"
+  replace "s|/var/lib/clickhouse/|/var/lib/clickhouse3/|g"
+  replace "s|/etc/clickhouse-server/|/etc/clickhouse-server3/|g"
 
   sudo -E -u clickhouse /usr/bin/clickhouse server --daemon --config /etc/clickhouse-server3/config.xml \
   --pid-file /var/run/clickhouse-server3/clickhouse-server.pid \
