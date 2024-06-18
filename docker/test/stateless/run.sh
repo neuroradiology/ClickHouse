@@ -6,6 +6,15 @@ source /setup_export_logs.sh
 # fail on errors, verbose and export all env variables
 set -e -x -a
 
+USE_DATABASE_REPLICATED=${USE_DATABASE_REPLICATED:=0}
+USE_SHARED_CATALOG=${USE_SHARED_CATALOG:=0}
+
+RUN_SEQUENTIAL_TESTS_IN_PARALLEL=1
+
+if [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
+  RUN_SEQUENTIAL_TESTS_IN_PARALLEL=0
+fi
+
 # Choose random timezone for this test run.
 #
 # NOTE: that clickhouse-test will randomize session_timezone by itself as well
@@ -93,8 +102,8 @@ if [ "$NUM_TRIES" -gt "1" ]; then
     mkdir -p /var/run/clickhouse-server
 fi
 
-if [[ -z "$USE_DATABASE_REPLICATED" ]] || [[ "$USE_DATABASE_REPLICATED" -ne 1 ]]; then
-  # Run a CH instance to execute sequential tests on it in parallel with all other tests.
+# Run a CH instance to execute sequential tests on it in parallel with all other tests.
+if [[ "$RUN_SEQUENTIAL_TESTS_IN_PARALLEL" -eq 1 ]]; then
   mkdir -p /var/run/clickhouse-server3 /etc/clickhouse-server3 /var/lib/clickhouse3
   cp -r -L /etc/clickhouse-server/* /etc/clickhouse-server3/
 
@@ -102,7 +111,7 @@ if [[ -z "$USE_DATABASE_REPLICATED" ]] || [[ "$USE_DATABASE_REPLICATED" -ne 1 ]]
   sudo chown -R clickhouse:clickhouse /etc/clickhouse-server3/*
 
   function replace(){
-      sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i $1 {} \;
+      sudo find /etc/clickhouse-server3/ -type f -name '*.xml' -exec sed -i "$1" {} \;
   }
 
   replace "s|<port>9000</port>|<port>39000</port>|g"
@@ -140,7 +149,7 @@ fi
 # simplest way to forward env variables to server
 sudo -E -u clickhouse /usr/bin/clickhouse-server --config /etc/clickhouse-server/config.xml --daemon --pid-file /var/run/clickhouse-server/clickhouse-server.pid
 
-if [[ -n "$USE_DATABASE_REPLICATED" ]] && [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
+if [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
     sudo sed -i "s|<filesystem_caches_path>/var/lib/clickhouse/filesystem_caches/</filesystem_caches_path>|<filesystem_caches_path>/var/lib/clickhouse/filesystem_caches_1/</filesystem_caches_path>|" /etc/clickhouse-server1/config.d/filesystem_caches_path.xml
 
     sudo sed -i "s|<filesystem_caches_path>/var/lib/clickhouse/filesystem_caches/</filesystem_caches_path>|<filesystem_caches_path>/var/lib/clickhouse/filesystem_caches_2/</filesystem_caches_path>|" /etc/clickhouse-server2/config.d/filesystem_caches_path.xml
@@ -177,7 +186,7 @@ if [[ -n "$USE_DATABASE_REPLICATED" ]] && [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]
     MAX_RUN_TIME=$((MAX_RUN_TIME != 0 ? MAX_RUN_TIME : 9000))    # set to 2.5 hours if 0 (unlimited)
 fi
 
-if [[ -n "$USE_SHARED_CATALOG" ]] && [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
+if [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
     sudo cat /etc/clickhouse-server1/config.d/filesystem_caches_path.xml \
     | sed "s|<filesystem_caches_path>/var/lib/clickhouse/filesystem_caches/</filesystem_caches_path>|<filesystem_caches_path>/var/lib/clickhouse/filesystem_caches_1/</filesystem_caches_path>|" \
     > /etc/clickhouse-server1/config.d/filesystem_caches_path.xml.tmp
@@ -257,11 +266,11 @@ function run_tests()
         ADDITIONAL_OPTIONS+=('--no-random-merge-tree-settings')
     fi
 
-    if [[ -n "$USE_SHARED_CATALOG" ]] && [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
+    if [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
         ADDITIONAL_OPTIONS+=('--shared-catalog')
     fi
 
-    if [[ -n "$USE_DATABASE_REPLICATED" ]] && [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
+    if [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
         ADDITIONAL_OPTIONS+=('--replicated-database')
         # Too many tests fail for DatabaseReplicated in parallel.
         ADDITIONAL_OPTIONS+=('--jobs')
@@ -274,7 +283,9 @@ function run_tests()
         # All other configurations are OK.
         ADDITIONAL_OPTIONS+=('--jobs')
         ADDITIONAL_OPTIONS+=('6')
+    fi
 
+    if [[ "$RUN_SEQUENTIAL_TESTS_IN_PARALLEL" -eq 1 ]]; then
         ADDITIONAL_OPTIONS+=('--run-sequential-tests-in-parallel')
     fi
 
@@ -336,7 +347,7 @@ do
     err=$(clickhouse-client -q "select * from system.$table into outfile '/test_output/$table.tsv.gz' format TSVWithNamesAndTypes")
     echo "$err"
     [[ "0" != "${#err}"  ]] && failed_to_save_logs=1
-    if [[ -n "$USE_DATABASE_REPLICATED" ]] && [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
+    if [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
         err=$( { clickhouse-client --port 19000 -q "select * from system.$table format TSVWithNamesAndTypes" | zstd --threads=0 > /test_output/$table.1.tsv.zst; } 2>&1 )
         echo "$err"
         [[ "0" != "${#err}"  ]] && failed_to_save_logs=1
@@ -345,7 +356,7 @@ do
         [[ "0" != "${#err}"  ]] && failed_to_save_logs=1
     fi
 
-    if [[ -n "$USE_SHARED_CATALOG" ]] && [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
+    if [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
         err=$( { clickhouse-client --port 19000 -q "select * from system.$table format TSVWithNamesAndTypes" | zstd --threads=0 > /test_output/$table.1.tsv.zst; } 2>&1 )
         echo "$err"
         [[ "0" != "${#err}"  ]] && failed_to_save_logs=1
@@ -356,18 +367,22 @@ done
 # Why do we read data with clickhouse-local?
 # Because it's the simplest way to read it when server has crashed.
 sudo clickhouse stop ||:
-if [[ -n "$USE_DATABASE_REPLICATED" ]] && [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
+if [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
     sudo clickhouse stop --pid-path /var/run/clickhouse-server1 ||:
     sudo clickhouse stop --pid-path /var/run/clickhouse-server2 ||:
 fi
 
-if [[ -n "$USE_SHARED_CATALOG" ]] && [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
+if [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
     sudo clickhouse stop --pid-path /var/run/clickhouse-server1 ||:
 fi
 
 rg -Fa "<Fatal>" /var/log/clickhouse-server/clickhouse-server.log ||:
 rg -A50 -Fa "============" /var/log/clickhouse-server/stderr.log ||:
 zstd --threads=0 < /var/log/clickhouse-server/clickhouse-server.log > /test_output/clickhouse-server.log.zst &
+
+if [[ "$RUN_SEQUENTIAL_TESTS_IN_PARALLEL" -eq 1 ]]; then
+  zstd --threads=0 < /var/log/clickhouse-server3/clickhouse-server.log > /test_output/clickhouse-server3.log.zst &
+fi
 
 data_path_config="--path=/var/lib/clickhouse/"
 if [[ -n "$USE_S3_STORAGE_FOR_MERGE_TREE" ]] && [[ "$USE_S3_STORAGE_FOR_MERGE_TREE" -eq 1 ]]; then
@@ -388,12 +403,12 @@ if [ $failed_to_save_logs -ne 0 ]; then
     for table in query_log zookeeper_log trace_log transactions_info_log metric_log blob_storage_log
     do
         clickhouse-local "$data_path_config" --only-system-tables --stacktrace -q "select * from system.$table format TSVWithNamesAndTypes" | zstd --threads=0 > /test_output/$table.tsv.zst ||:
-        if [[ -n "$USE_DATABASE_REPLICATED" ]] && [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
+        if [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
             clickhouse-local --path /var/lib/clickhouse1/ --only-system-tables --stacktrace -q "select * from system.$table format TSVWithNamesAndTypes" | zstd --threads=0 > /test_output/$table.1.tsv.zst ||:
             clickhouse-local --path /var/lib/clickhouse2/ --only-system-tables --stacktrace -q "select * from system.$table format TSVWithNamesAndTypes" | zstd --threads=0 > /test_output/$table.2.tsv.zst ||:
         fi
 
-        if [[ -n "$USE_SHARED_CATALOG" ]] && [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
+        if [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
             clickhouse-local --path /var/lib/clickhouse1/ --only-system-tables --stacktrace -q "select * from system.$table format TSVWithNamesAndTypes" | zstd --threads=0 > /test_output/$table.1.tsv.zst ||:
         fi
     done
@@ -429,7 +444,7 @@ rm -rf /var/lib/clickhouse/data/system/*/
 tar -chf /test_output/store.tar /var/lib/clickhouse/store ||:
 tar -chf /test_output/metadata.tar /var/lib/clickhouse/metadata/*.sql ||:
 
-if [[ -n "$USE_DATABASE_REPLICATED" ]] && [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
+if [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
     rg -Fa "<Fatal>" /var/log/clickhouse-server/clickhouse-server1.log ||:
     rg -Fa "<Fatal>" /var/log/clickhouse-server/clickhouse-server2.log ||:
     zstd --threads=0 < /var/log/clickhouse-server/clickhouse-server1.log > /test_output/clickhouse-server1.log.zst ||:
@@ -440,7 +455,7 @@ if [[ -n "$USE_DATABASE_REPLICATED" ]] && [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]
     tar -chf /test_output/coordination2.tar /var/lib/clickhouse2/coordination ||:
 fi
 
-if [[ -n "$USE_SHARED_CATALOG" ]] && [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
+if [[ "$USE_SHARED_CATALOG" -eq 1 ]]; then
     rg -Fa "<Fatal>" /var/log/clickhouse-server/clickhouse-server1.log ||:
     zstd --threads=0 < /var/log/clickhouse-server/clickhouse-server1.log > /test_output/clickhouse-server1.log.zst ||:
     mv /var/log/clickhouse-server/stderr1.log /test_output/ ||:
