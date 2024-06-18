@@ -2414,21 +2414,24 @@ def do_run_tests(jobs, test_suite: TestSuite):
                 args.http_port = 38123
                 args.https_port = 38443
 
-                os.environ["CLICKHOUSE_CONFIG"] = "/etc/clickhouse-server3/config.xml"
-                os.environ["CLICKHOUSE_CONFIG_DIR"] = "/etc/clickhouse-server3"
-                os.environ[
-                    "CLICKHOUSE_CONFIG_GREP"
-                ] = "/etc/clickhouse-server3/preprocessed/config.xml"
-                os.environ["CLICKHOUSE_PORT_TCP"] = "39000"
-                os.environ["CLICKHOUSE_PORT_TCP_SECURE"] = "39440"
-                os.environ["CLICKHOUSE_PORT_TCP_WITH_PROXY"] = "39010"
-                os.environ["CLICKHOUSE_PORT_HTTP"] = "38123"
-                os.environ["CLICKHOUSE_PORT_HTTPS"] = "38443"
-                os.environ["CLICKHOUSE_PORT_INTERSERVER"] = "39009"
-                os.environ["CLICKHOUSE_PORT_KEEPER"] = "39181"
-                os.environ["CLICKHOUSE_PORT_PROMTHEUS_PORT"] = "39988"
-                os.environ["CLICKHOUSE_PORT_MYSQL"] = "39004"
-                os.environ["CLICKHOUSE_PORT_POSTGRESQL"] = "39005"
+                updated_env = {
+                    "CLICKHOUSE_CONFIG": "/etc/clickhouse-server3/config.xml",
+                    "CLICKHOUSE_CONFIG_DIR": "/etc/clickhouse-server3",
+                    "CLICKHOUSE_CONFIG_GREP": "/etc/clickhouse-server3/preprocessed/config.xml",
+                    "CLICKHOUSE_USER_FILES": "/var/lib/clickhouse3/user_files",
+                    "CLICKHOUSE_SCHEMA_FILES": "/var/lib/clickhouse3/format_schemas",
+                    "CLICKHOUSE_PORT_TCP": "39000",
+                    "CLICKHOUSE_PORT_TCP_SECURE": "39440",
+                    "CLICKHOUSE_PORT_TCP_WITH_PROXY": "39010",
+                    "CLICKHOUSE_PORT_HTTP": "38123",
+                    "CLICKHOUSE_PORT_HTTPS": "38443",
+                    "CLICKHOUSE_PORT_INTERSERVER": "39009",
+                    "CLICKHOUSE_PORT_KEEPER": "39181",
+                    "CLICKHOUSE_PORT_PROMTHEUS_PORT": "39988",
+                    "CLICKHOUSE_PORT_MYSQL": "39004",
+                    "CLICKHOUSE_PORT_POSTGRESQL": "39005",
+                }
+                os.environ.update(updated_env)
 
                 run_tests_array(*args_, **kwargs)
 

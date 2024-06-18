@@ -5,13 +5,12 @@ CUR_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=../shell_config.sh
 . "$CUR_DIR"/../shell_config.sh
 
-user_files_path=$($CLICKHOUSE_CLIENT --query "select _path,_file from file('nonexist.txt', 'CSV', 'val1 char')" 2>&1 | grep -E '^Code: 107.*FILE_DOESNT_EXIST' | head -1 | awk '{gsub("/nonexist.txt","",$9); print $9}')
-for f in "${user_files_path:?}/${CLICKHOUSE_DATABASE}"_*.json; do
+for f in "${USER_FILES_PATH:?}/${CLICKHOUSE_DATABASE}"_*.json; do
     [ -e $f ] && rm $f
 done
 
 for i in {0..5}; do
-    echo "{\"k$i\": 100}" > "$user_files_path/${CLICKHOUSE_DATABASE}_$i.json"
+    echo "{\"k$i\": 100}" > "$USER_FILES_PATH/${CLICKHOUSE_DATABASE}_$i.json"
 done
 
 ${CLICKHOUSE_CLIENT} -q "DROP TABLE IF EXISTS t_json_files"
@@ -41,4 +40,4 @@ ${CLICKHOUSE_CLIENT} -q "SELECT data FROM t_json_files ORDER BY file FORMAT JSON
 ${CLICKHOUSE_CLIENT} -q "SELECT toTypeName(data) FROM t_json_files LIMIT 1"
 
 ${CLICKHOUSE_CLIENT} -q "DROP TABLE IF EXISTS t_json_files"
-rm "$user_files_path"/${CLICKHOUSE_DATABASE}_*.json
+rm "$USER_FILES_PATH"/${CLICKHOUSE_DATABASE}_*.json

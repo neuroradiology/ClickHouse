@@ -5,7 +5,6 @@ CURDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$CURDIR"/../shell_config.sh
 
 
-USER_FILES_PATH=$($CLICKHOUSE_CLIENT_BINARY --query "select _path,_file from file('nonexist.txt', 'CSV', 'val1 char')" 2>&1 | grep Exception | awk '{gsub("/nonexist.txt","",$9); print $9}')
 DATA_FILE=$USER_FILES_PATH/${CLICKHOUSE_DATABASE}.data
 SELECT_QUERY="select * from file('${CLICKHOUSE_DATABASE}.data', 'CustomSeparated', 'x Nullable(Float64), y Nullable(UInt64)') settings input_format_parallel_parsing=0, format_custom_escaping_rule='Quoted'"
 

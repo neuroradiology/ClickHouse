@@ -6,9 +6,6 @@ CURDIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$CURDIR"/../shell_config.sh
 
 
-USER_FILES_PATH=$($CLICKHOUSE_CLIENT_BINARY --query "select _path,_file from file('nonexist.txt', 'CSV', 'val1 char')" 2>&1 | grep Exception | awk '{gsub("/nonexist.txt","",$9); print $9}')
-
-
 $CLICKHOUSE_CLIENT --query="DROP TABLE IF EXISTS msgpack";
 
 $CLICKHOUSE_CLIENT --query="CREATE TABLE msgpack (uint8 UInt8, uint16 UInt16, uint32 UInt32, uint64 UInt64, int8 Int8, int16 Int16, int32 Int32, int64 Int64, float Float32, double Float64, string String, date Date, datetime DateTime('Asia/Istanbul'), datetime64 DateTime64(3, 'Asia/Istanbul'), array Array(UInt32)) ENGINE = Memory";
