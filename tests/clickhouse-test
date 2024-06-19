@@ -3380,7 +3380,6 @@ if __name__ == "__main__":
     server_died = multiprocessing.Event()
     stop_tests_triggered_lock = multiprocessing.Lock()
     stop_tests_triggered = multiprocessing.Event()
-    queue = multiprocessing.Queue(maxsize=1)
     multiprocessing_manager = multiprocessing.Manager()
     restarted_tests = multiprocessing_manager.list()
 
@@ -3521,6 +3520,8 @@ if __name__ == "__main__":
 
     if args.jobs is None:
         args.jobs = multiprocessing.cpu_count()
+
+    queue = multiprocessing.Queue(maxsize=args.jobs)
 
     if args.db_engine and args.db_engine == "Ordinary":
         MESSAGES_TO_RETRY.append(" locking attempt on ")
