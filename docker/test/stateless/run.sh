@@ -381,6 +381,8 @@ rg -A50 -Fa "============" /var/log/clickhouse-server/stderr.log ||:
 zstd --threads=0 < /var/log/clickhouse-server/clickhouse-server.log > /test_output/clickhouse-server.log.zst &
 
 if [[ "$RUN_SEQUENTIAL_TESTS_IN_PARALLEL" -eq 1 ]]; then
+  rg -Fa "<Fatal>" /var/log/clickhouse-server3/clickhouse-server.log ||:
+  rg -A50 -Fa "============" /var/log/clickhouse-server3/stderr.log ||:
   zstd --threads=0 < /var/log/clickhouse-server3/clickhouse-server.log > /test_output/clickhouse-server3.log.zst &
 fi
 
@@ -443,6 +445,13 @@ tar -chf /test_output/coordination.tar /var/lib/clickhouse/coordination ||:
 rm -rf /var/lib/clickhouse/data/system/*/
 tar -chf /test_output/store.tar /var/lib/clickhouse/store ||:
 tar -chf /test_output/metadata.tar /var/lib/clickhouse/metadata/*.sql ||:
+
+if [[ "$RUN_SEQUENTIAL_TESTS_IN_PARALLEL" -eq 1 ]]; then
+    rm -rf /var/lib/clickhouse3/data/system/*/
+    tar -chf /test_output/store.tar /var/lib/clickhouse3/store ||:
+    tar -chf /test_output/metadata.tar /var/lib/clickhouse3/metadata/*.sql ||:
+fi
+
 
 if [[ "$USE_DATABASE_REPLICATED" -eq 1 ]]; then
     rg -Fa "<Fatal>" /var/log/clickhouse-server/clickhouse-server1.log ||:
