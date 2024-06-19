@@ -1619,25 +1619,39 @@ class TestCase:
             if os.environ.get("CLICKHOUSE_PORT_TCP"):
                 replace_in_file(
                     self.stdout_file,
-                    "PORT 9000",
                     f"PORT {os.environ['CLICKHOUSE_PORT_TCP']}",
+                    "PORT 9000",
                 )
                 replace_in_file(
                     self.stdout_file,
-                    "localhost	9000",
                     f"localhost	{os.environ['CLICKHOUSE_PORT_TCP']}",
+                    "localhost	9000",
                 )
 
             if os.environ.get("CLICKHOUSE_PORT_TCP_SECURE"):
                 replace_in_file(
                     self.stdout_file,
-                    "PORT 9440",
                     f"PORT {os.environ['CLICKHOUSE_PORT_TCP_SECURE']}",
+                    "PORT 9440",
                 )
                 replace_in_file(
                     self.stdout_file,
-                    "localhost	9440",
                     f"localhost	{os.environ['CLICKHOUSE_PORT_TCP_SECURE']}",
+                    "localhost	9440",
+                )
+
+            if os.environ.get("CLICKHOUSE_PATH"):
+                replace_in_file(
+                    self.stdout_file,
+                    os.environ["CLICKHOUSE_PATH"],
+                    "/var/lib/clickhouse",
+                )
+
+            if os.environ.get("CLICKHOUSE_PORT_HTTPS"):
+                replace_in_file(
+                    self.stdout_file,
+                    f"https://localhost:{os.environ['CLICKHOUSE_PORT_HTTPS']}/",
+                    "https://localhost:8443/",
                 )
 
         stdout = ""
@@ -2171,16 +2185,17 @@ def run_tests_array(all_tests_with_params: Tuple[List[str], int, TestSuite, bool
 
         try:
             description = ""
-            test_cace_name = removesuffix(test_case.name, ".gen", ".sql") + ": "
-            if not is_concurrent:
+            test_case_name = removesuffix(test_case.name, ".gen", ".sql") + ": "
+
+            if is_concurrent or args.run_sequential_tests_in_parallel:
+                description = f"{test_case_name:72}"
+            else:
                 sys.stdout.flush()
-                sys.stdout.write(f"{test_cace_name:72}")
+                sys.stdout.write(f"{test_case_name:72}")
                 # This flush is needed so you can see the test name of the long
                 # running test before it will finish. But don't do it in parallel
                 # mode, so that the lines don't mix.
                 sys.stdout.flush()
-            else:
-                description = f"{test_cace_name:72}"
 
             while True:
                 test_result = test_case.run(
@@ -2445,6 +2460,7 @@ def do_run_tests(jobs, test_suite: TestSuite):
                     "CLICKHOUSE_CONFIG_GREP": "/etc/clickhouse-server3/preprocessed/config.xml",
                     "CLICKHOUSE_USER_FILES": "/var/lib/clickhouse3/user_files",
                     "CLICKHOUSE_SCHEMA_FILES": "/var/lib/clickhouse3/format_schemas",
+                    "CLICKHOUSE_PATH": "/var/lib/clickhouse3",
                     "CLICKHOUSE_PORT_TCP": "39000",
                     "CLICKHOUSE_PORT_TCP_SECURE": "39440",
                     "CLICKHOUSE_PORT_TCP_WITH_PROXY": "39010",
