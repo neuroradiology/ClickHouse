@@ -1615,6 +1615,29 @@ class TestCase:
         # Normalize hostname in stdout file.
         replace_in_file(self.stdout_file, socket.gethostname(), "localhost")
 
+        if args.run_sequential_tests_in_parallel:
+            replace_in_file(
+                self.stdout_file,
+                "PORT 9000",
+                f"PORT {os.environ['CLICKHOUSE_PORT_TCP']}",
+            )
+            replace_in_file(
+                self.stdout_file,
+                "PORT 9440",
+                f"PORT {os.environ['CLICKHOUSE_PORT_TCP_SECURE']}",
+            )
+
+            replace_in_file(
+                self.stdout_file,
+                "localhost	9000",
+                f"localhost	{os.environ['CLICKHOUSE_PORT_TCP']}",
+            )
+            replace_in_file(
+                self.stdout_file,
+                "localhost	9440",
+                f"localhost	{os.environ['CLICKHOUSE_PORT_TCP_SECURE']}",
+            )
+
         stdout = ""
         if os.path.exists(self.stdout_file):
             with open(self.stdout_file, "rb") as stdfd:
