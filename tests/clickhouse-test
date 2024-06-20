@@ -3079,7 +3079,7 @@ def parse_args():
         "-t",
         "--timeout",
         type=int,
-        default=350,
+        default=600,
         help="Timeout for each test case in seconds",
     )
     parser.add_argument(

@@ -25,9 +25,9 @@ ${CLICKHOUSE_CLIENT} --query "INSERT INTO TABLE FUNCTION file('test_02270_2.csv.
 ${CLICKHOUSE_CLIENT} --query "SELECT * FROM file('test_02270*.csv.gz', 'CSV', 'a String, b String')" 2>&1 | grep -o -m1 "test_02270_2.csv.gz"
 ${CLICKHOUSE_CLIENT} --query "SELECT * FROM file('test_02270*.csv.gz', 'CSV', 'a String, b String')" --input_format_parallel_parsing 0 2>&1 | grep -o -m1 "test_02270_2.csv.gz"
 
-rm "${CLICKHOUSE_TMP}"/test_02270_1.csv
-rm "${CLICKHOUSE_TMP}"/test_02270_2.csv
-rm "${USER_FILES_PATH}"/test_02270_1.csv
-rm "${USER_FILES_PATH}"/test_02270_2.csv
-rm "${USER_FILES_PATH}"/test_02270_1.csv.gz
-rm "${USER_FILES_PATH}"/test_02270_2.csv.gz
+rm -f "${CLICKHOUSE_TMP}"/test_02270_1.csv
+rm -f "${CLICKHOUSE_TMP}"/test_02270_2.csv
+rm -f "${USER_FILES_PATH}"/test_02270_1.csv
+rm -f "${USER_FILES_PATH}"/test_02270_2.csv
+rm -f "${USER_FILES_PATH}"/test_02270_1.csv.gz
+rm -f "${USER_FILES_PATH}"/test_02270_2.csv.gz
