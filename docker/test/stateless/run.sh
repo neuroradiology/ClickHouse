@@ -54,6 +54,9 @@ source /utils.lib
 ./setup_minio.sh stateless
 ./setup_hdfs_minicluster.sh
 
+sudo lsof -i -P -n
+sudo lsof -i -P -n | awk 'NR>1 {print $2}' | xargs -I{} ps -p {} -o pid,cmd
+
 config_logs_export_cluster /etc/clickhouse-server/config.d/system_logs_export.yaml
 
 if [[ -n "$BUGFIX_VALIDATE_CHECK" ]] && [[ "$BUGFIX_VALIDATE_CHECK" -eq 1 ]]; then
