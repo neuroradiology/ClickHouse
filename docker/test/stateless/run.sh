@@ -282,6 +282,9 @@ function run_tests()
         # Coverage on a per-test basis could only be collected sequentially.
         # Do not set the --jobs parameter.
         echo "Running tests with coverage collection."
+    elif [[ 1 == $(clickhouse-client --query "SELECT value LIKE '%Debug%' FROM system.build_options WHERE name = 'BUILD_TYPE'") ]]; then
+        ADDITIONAL_OPTIONS+=('--jobs')
+        ADDITIONAL_OPTIONS+=('7')
     else
         # All other configurations are OK.
         ADDITIONAL_OPTIONS+=('--jobs')
