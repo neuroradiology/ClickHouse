@@ -320,7 +320,7 @@ class CI:
             required_builds=[BuildNames.PACKAGE_MSAN], num_batches=3
         ),
         JobNames.STATELESS_TEST_UBSAN: CommonJobConfigs.STATELESS_TEST.with_properties(
-            required_builds=[BuildNames.PACKAGE_UBSAN], num_batches=2
+            required_builds=[BuildNames.PACKAGE_UBSAN], num_batches=1
         ),
         JobNames.STATELESS_TEST_DEBUG: CommonJobConfigs.STATELESS_TEST.with_properties(
             required_builds=[BuildNames.PACKAGE_DEBUG], num_batches=4
@@ -339,7 +339,7 @@ class CI:
             required_builds=[BuildNames.PACKAGE_RELEASE], num_batches=3
         ),
         JobNames.STATELESS_TEST_S3_DEBUG: CommonJobConfigs.STATELESS_TEST.with_properties(
-            required_builds=[BuildNames.PACKAGE_DEBUG], num_batches=5
+            required_builds=[BuildNames.PACKAGE_DEBUG], num_batches=4
         ),
         JobNames.STATELESS_TEST_AZURE_ASAN: CommonJobConfigs.STATELESS_TEST.with_properties(
             required_builds=[BuildNames.PACKAGE_ASAN], num_batches=2, release_only=True
