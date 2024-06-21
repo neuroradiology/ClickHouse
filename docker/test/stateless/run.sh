@@ -52,7 +52,6 @@ source /utils.lib
 /usr/share/clickhouse-test/config/install.sh
 
 ./setup_minio.sh stateless
-./setup_hdfs_minicluster.sh
 
 sudo lsof -i -P -n
 sudo lsof -i -P -n | awk 'NR>1 {print $2}' | xargs -I{} ps -p {} -o pid,cmd
@@ -222,6 +221,9 @@ do
     clickhouse-client --query "SELECT 1" && break
     sleep 1
 done
+
+./setup_hdfs_minicluster.sh
+
 
 setup_logs_replication
 
